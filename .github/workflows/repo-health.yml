@@ -1,0 +1,10 @@
+name: Repo Health
+on:
+  pull_request:
+
+jobs:
+  repo_health:
+    uses: OpenVoiceOS/gh-automations/.github/workflows/repo-health.yml@dev
+    with:
+      version_file: "ovos_media_provider_youtube_music/version.py"
+    secrets: inherit
