@@ -11,52 +11,31 @@ All YouTube Music access is delegated to the ``tutubo`` client library. Its
 objects via tutubo's ``mediavocab_bridge`` (``music_track_to_work`` /
 ``music_track_to_release``).
 """
-from typing import List, Optional, Set, ClassVar
+from typing import ClassVar, List, Optional, Set
 
 from ovos_utils.log import LOG
 
-from mediavocab import MediaType, Release, Signals
-from mediavocab.taxonomy import PlaybackType
+from mediavocab import Release, Signals
 from ovos_plugin_manager.templates.media_provider import MediaProvider
 
 from ovos_media_provider_youtube_music.version import __version__  # noqa: F401
 
 
 class YouTubeMusicMediaProvider(MediaProvider):
-    """Search YouTube Music and return ``mediavocab.Release`` playables.
-
-    Routing (three-axis gate):
-
-    * ``media`` — ``MUSIC`` and ``MUSIC_VIDEO``.
-    * ``playback_type`` — ``AUDIO`` only (YouTube Music tracks are consumed as
-      audio streams; the backend selector resolves the stream at playback).
-    * ``genre_filter`` — empty (no genre gate).
-    """
+    """Search YouTube Music and return ``mediavocab.Release`` playables."""
 
     name: ClassVar[str] = "youtube_music"
-
-    media: ClassVar[Set[MediaType]] = {
-        MediaType.MUSIC,
-        MediaType.MUSIC_VIDEO,
-    }
-
-    playback_type: ClassVar[Set[PlaybackType]] = {
-        PlaybackType.AUDIO,
-    }
 
     def __init__(self, config: Optional[dict] = None):
         super().__init__(config)
         # max results per search, overridable via plugin config
         self.max_results: int = int(self.config.get("max_results", 10))
 
-    def is_available(self) -> bool:
-        """``tutubo`` (with ``ytmusicapi``) is a hard dependency and YouTube
-        Music needs no API key, so the provider is always available (network
-        reachability is handled per-search by the pipeline's ``search_safe``
-        wrapper)."""
-        return True
-
-    def search(self, signals: Signals, lang: str = "en-us") -> List[Release]:
+    def search(self, signals: Signals, lang: str = "en-us", *,
+               supported_playback_types: Optional[Set[str]] = None,
+               blocked_genres: Optional[Set[str]] = None,
+               region: Optional[str] = None,
+               session_id: Optional[str] = None) -> List[Release]:
         """Search YouTube Music for ``signals.title`` and return Releases.
 
         Delegates to ``tutubo.YoutubeMusicSearch``: each ``MusicTrack`` it
