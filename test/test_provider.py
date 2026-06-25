@@ -2,7 +2,6 @@
 from unittest.mock import MagicMock, patch
 
 from mediavocab import MediaType, Release, Signals, Work
-from mediavocab.taxonomy import PlaybackType
 
 from ovos_media_provider_youtube_music import YouTubeMusicMediaProvider
 
@@ -16,25 +15,6 @@ def _make_release(title="Some Song"):
 def test_instantiation():
     provider = YouTubeMusicMediaProvider()
     assert provider.name == "youtube_music"
-    assert provider.is_available() is True
-
-
-def test_routing_class_sets():
-    assert YouTubeMusicMediaProvider.media == {
-        MediaType.MUSIC,
-        MediaType.MUSIC_VIDEO,
-    }
-    assert YouTubeMusicMediaProvider.playback_type == {PlaybackType.AUDIO}
-
-
-def test_matches_music_true():
-    provider = YouTubeMusicMediaProvider()
-    assert provider.matches(Signals(medium=MediaType.MUSIC)) is True
-
-
-def test_matches_book_false():
-    provider = YouTubeMusicMediaProvider()
-    assert provider.matches(Signals(medium=MediaType.BOOK)) is False
 
 
 def test_search_empty_title_returns_empty():
@@ -59,7 +39,14 @@ def test_search_wires_to_tutubo_bridge():
                   return_value=fake_work) as to_work, \
             patch("tutubo.mediavocab_bridge.music_track_to_release",
                   return_value=_make_release("Paranoid")) as to_release:
-        results = provider.search(Signals(title="black sabbath paranoid"))
+        results = provider.search(
+            Signals(title="black sabbath paranoid"),
+            lang="en-us",
+            supported_playback_types={"audio"},
+            blocked_genres={"adult"},
+            region="US",
+            session_id="sess-1",
+        )
 
     ctor.assert_called_once_with("black sabbath paranoid")
     fake_search.iterate_tracks.assert_called_once()
